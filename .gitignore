@@ -1,0 +1,11 @@
+# Save this file as ".gitignore" in repo
+
+####################################
+# Exclude entire Folders in repo   #
+####################################
+Portfolio_Generator/*
+
+####################################
+# exclude compressed folders      #
+####################################
+*.zip
