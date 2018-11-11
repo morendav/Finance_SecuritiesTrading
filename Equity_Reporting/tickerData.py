@@ -6,17 +6,20 @@
 #       -x  x array bounds in space delimited format: min max
 #
 #######################################
-###  CB: Modules &  Init Var
+###  CB: Init config variables
 #######################################
-import pandas_datareader as pdr
-import pandas as pd
+config = {}
+config["maxDays"] = 2000
+config["shortWindow"] = 10
+config["longWindow"] = 50
+
+
+#######################################
+###  CB: Init Modules & Init Var
+#######################################
 import datetime as dt
 import sys
-from datetime import date
 from argparse import ArgumentParser
-from matplotlib import cm
-import matplotlib.pyplot as plt
-
 
 ### Read passed arguements from the command line
 parser = ArgumentParser(
@@ -29,14 +32,31 @@ args = parser.parse_args()
 tickerSymbol=args.tickerSymbol
 pastDate=args.pastDate
 
+### try date variable init, exit on error
 try:
-    startDate = dt.datetime(pastDate[2], pastDate[1], pastDate[0])
-    today = date.today()
-    endDate = dt.datetime( today.year, today.month, today.day )
-    endDate > startDate
+	startDate = dt.datetime(pastDate[2], pastDate[1], pastDate[0])
+	today = dt.date.today()
+	endDate = dt.datetime( today.year, today.month, today.day )
+	if (endDate-startDate).days > config["maxDays"]:
+		startDate = endDate - dt.timedelta(days=config["maxDays"])
+		print('\nMax historical data limit reached, max limit set to: ' + str(config["maxDays"]) + ' days\n')
+	if (endDate < startDate):
+		print('\nCritical error encountered during processing.\nDate parameter not in past.')
+		sys.exit(1)
 except:
-    print('\nCritical error encountered during processing.\nPassed date parameter expects three integers for a past date, in format: \ndd mm yyyy')
+    print('\nCritical error encountered during processing.\nPassed date parameter expects three integers for a past date, in format: \ndd mm yyyy\n')
     sys.exit(1) # on date error exit the whole script
+		
+
+
+#######################################
+###  CB: import other modules
+#######################################
+import pandas_datareader as pdr
+import pandas as pd
+from matplotlib import cm
+import matplotlib.pyplot as plt
+
 
 #######################################
 ### CB: Pull Ticker data from public financial data API
@@ -49,4 +69,7 @@ HistoricalIndexFund = pdr.get_data_yahoo("SPY", startDate, endDate)
 #######################################
 ### CB: Report for Ticker
 #######################################
-plt.plot(HistoricalFirmValuation[Close])
+plt.plot(HistoricalFirmValuation['Close'])
+plt.plot(HistoricalFirmValuation['Close'].rolling(window=config["shortWindow"]).mean())
+plt.plot(HistoricalFirmValuation['Close'].rolling(window=config["longWindow"]).mean())
+plt.show()
