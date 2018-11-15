@@ -46,7 +46,7 @@ try:
 except:
     print('\nCritical error encountered during processing.\nPassed date parameter expects three integers for a past date, in format: \ndd mm yyyy\n')
     sys.exit(1) # on date error exit the whole script
-		
+
 
 
 #######################################
@@ -61,15 +61,32 @@ import matplotlib.pyplot as plt
 #######################################
 ### CB: Pull Ticker data from public financial data API
 #######################################
-HistoricalFirmValuation = pdr.get_data_yahoo(tickerSymbol, startDate, endDate)
-# SP500 Index, Market Portfolio proxy
-HistoricalIndexFund = pdr.get_data_yahoo("SPY", startDate, endDate)
+historical_MarketCap = pdr.get_data_yahoo(tickerSymbol, startDate, endDate).filter(['Close'],axis=1)
+###     Pull index funds for reporting
+# pull S&P500, create intiial pandas dataset
+indexFund = pdr.get_data_yahoo("^GSPC", startDate, endDate).filter(['Close'],axis=1)
+indexFund = indexFund.rename(index=str, columns={"Close":"sp500"})
+#pull Nasdaq & DownJones Industrial
+indexFund['nasdaq'] = pdr.get_data_yahoo("^IXIC", startDate, endDate)['Close']
+indexFund['dowJonesInd']  = pdr.get_data_yahoo("^DJI", startDate, endDate)['Close']
+
+
+#######################################
+### CB: Data Analysis
+#######################################
+# Normailze hte index funds to the maximum value from reported firm's market capitalization
+normalized_indexFund = ((indexFund-indexFund.min())/(indexFund.max()-indexFund.min())) * (historical_MarketCap['Close'].max())
+
 
 
 #######################################
 ### CB: Report for Ticker
 #######################################
-plt.plot(HistoricalFirmValuation['Close'])
-plt.plot(HistoricalFirmValuation['Close'].rolling(window=config["shortWindow"]).mean())
-plt.plot(HistoricalFirmValuation['Close'].rolling(window=config["longWindow"]).mean())
+plt.plot(historical_MarketCap)
+plt.plot(historical_MarketCap.rolling(window=config["shortWindow"]).mean())
+plt.plot(historical_MarketCap.rolling(window=config["longWindow"]).mean())
+plt.plot(normalized_indexFund['sp500'])
+plt.plot(normalized_indexFund['nasdaq'])
+plt.plot(normalized_indexFund['dowJonesInd'])
+
 plt.show()
